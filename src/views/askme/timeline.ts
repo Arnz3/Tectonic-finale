@@ -1,7 +1,9 @@
 // D3 timeline: one card per document, in horizontal lanes per source.
 // React passes a topic and the expanded bundles; clicks go back through callbacks.
 import * as d3 from 'd3'
-import { LANES, TRUST, type DocGroup, type Lane, type TimelineDoc, type Topic } from './askmeData'
+import { LANES, TRUST, type DocGroup, type Lane, type TimelineDoc, type Topic, type Trust } from './askmeData'
+
+const FADED: Trust[] = ['expired', 'similar', 'support', 'other_scope']
 
 const M = { left: 160, top: 44, bottom: 52, pad: 16, rowH: 58, cardH: 46 }
 const ICON_R = 5
@@ -411,6 +413,8 @@ export function createTimeline(opts: {
       })
 
     cards.style('pointer-events', (d) => (d.card.hidden ? 'none' : null))
+    // Documents you should not rely on fade back, so the trusted ones stand out.
+    cards.classed('faded', (d) => FADED.includes(d.trust))
     // A bundle (card with +N) gets a dashed border.
     cards.select('.askme-card-bg').attr('class', (d) => `askme-card-bg t-${d.trust}${d.card.isLead ? ' bundle' : ''}`)
     cards.select('.askme-icon').attr('fill', (d) => TRUST[d.trust].color)

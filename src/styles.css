@@ -1543,3 +1543,13 @@ button.crumb:hover {
     display: none;
   }
 }
+
+/* Not useful documents fade back; hover brings them back. */
+.askme-card.faded > * {
+  opacity: 0.4;
+  transition: opacity 0.15s;
+}
+.askme-card.faded:hover > *,
+.askme-card.faded:focus-visible > * {
+  opacity: 1;
+}

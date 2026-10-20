@@ -22,7 +22,6 @@ export interface Lane {
 
 /** Where a document comes from. One horizontal lane per source on the timeline. */
 export const LANES: Lane[] = [
-  { id: 'meeting', label: 'Teams-meetings', color: '#6d5bd0' },
   { id: 'rules', label: 'Regelgeving', color: '#94a3b8' },
   { id: 'procedure', label: 'Procedures', color: '#94a3b8' },
   { id: 'client', label: 'Klant', color: '#94a3b8' },
@@ -30,8 +29,8 @@ export const LANES: Lane[] = [
 ]
 
 function laneOf(doc: Document): string {
-  if (doc.meeting) return 'meeting'
-  if (doc.folder.toLowerCase().startsWith('teams')) return 'teams'
+  // A change from a meeting sits on the same line as the document it overrules (it copies that layer).
+  if (!doc.meeting && doc.folder.toLowerCase().startsWith('teams')) return 'teams'
   if (doc.layer === 'wet' || doc.layer === 'sector') return 'rules'
   if (doc.layer === 'klant') return 'client'
   return 'procedure'
@@ -124,7 +123,7 @@ function buildTopic(topicId: string, docs: Document[], color: string): Topic {
   const laneBest = new Set<string>()
   for (const lane of LANES) {
     const candidates = docs
-      .filter((d) => laneOf(d) === lane.id && d.country === home && d.status === 'goedgekeurd' && !groupOf.has(d.id))
+      .filter((d) => !d.meeting && laneOf(d) === lane.id && d.country === home && d.status === 'goedgekeurd' && !groupOf.has(d.id))
       .sort((a, b) => Number(a.owner === null) - Number(b.owner === null) || b.modified.localeCompare(a.modified))
     if (candidates[0]) laneBest.add(candidates[0].id)
   }
