@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { PdfPage } from '../../components/PdfPage'
 import { formatDate } from '../../format'
 import { currentDocuments } from '../../meetings'
 import type { Document } from '../../types'
@@ -16,12 +17,6 @@ export function MeetingChangePanel({ doc, onOpenDoc, onClose }: { doc: Document;
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
-
-  // Split the original text around the overruled sentence; all parts are rendered as plain text.
-  const text = original?.text ?? ''
-  const at = m.oldSentence ? text.indexOf(m.oldSentence) : -1
-  const before = at >= 0 ? text.slice(0, at) : ''
-  const after = at >= 0 ? text.slice(at + m.oldSentence.length) : text
 
   const change = (
     <span className="doc-change">
@@ -58,21 +53,7 @@ export function MeetingChangePanel({ doc, onOpenDoc, onClose }: { doc: Document;
       </div>
 
       <h3>Document</h3>
-      <div className="preview-text doc-with-change">
-        {at >= 0 ? (
-          <>
-            {before}
-            {change}
-            {after}
-          </>
-        ) : (
-          <>
-            {change}
-            {'\n\n'}
-            {after}
-          </>
-        )}
-      </div>
+      {original && <PdfPage doc={original} mark={{ sentence: m.oldSentence, node: change }} />}
 
       {original && (
         <button className="meeting-replaces" onClick={() => onOpenDoc(original.id)}>

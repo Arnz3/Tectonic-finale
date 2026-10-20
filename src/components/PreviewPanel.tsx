@@ -3,6 +3,7 @@ import { recommendationsFor } from '../analysis'
 import { formatDate } from '../format'
 import type { Document } from '../types'
 import { useVoteSummaries } from '../votes'
+import { PdfPage } from './PdfPage'
 import { VoteBox } from './VoteBox'
 
 const countryLabel: Record<Document['country'], string> = { BE: 'België', NL: 'Nederland', DE: 'Duitsland' }
@@ -52,8 +53,8 @@ export function PreviewPanel({ doc, query, onClose }: { doc: Document; query: st
 
       {query && <VoteBox docId={doc.id} query={query} />}
 
-      <h3>Inhoud</h3>
-      <div className="preview-text">{doc.text}</div>
+      <h3>Document</h3>
+      <PdfPage doc={doc} />
 
       <h3>Wijzigingsgeschiedenis</h3>
       <ul className="history">

@@ -1,0 +1,160 @@
+/* PDF viewer: an official-looking page behind every document. */
+
+/* Wider panel, so the page reads like a document. */
+.preview-panel {
+  width: min(600px, 100vw);
+}
+
+.pdf-viewer {
+  overflow: hidden;
+  border: 1px solid #d4d7dd;
+  border-radius: 10px;
+  background: #525659;
+}
+.pdf-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #323639;
+  color: #f1f1f1;
+  font-size: 12px;
+}
+.pdf-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pdf-icon {
+  flex-shrink: 0;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: #d13438;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+}
+.pdf-tools {
+  flex-shrink: 0;
+  color: #bdbdbd;
+}
+.pdf-canvas {
+  max-height: 70vh;
+  overflow: auto;
+  padding: 20px 18px 24px;
+}
+.pdf-page {
+  position: relative;
+  overflow: hidden;
+  min-height: 640px;
+  padding: 36px 38px 28px;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25), 0 8px 24px rgba(0, 0, 0, 0.25);
+  color: #1f2328;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 13px;
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+}
+.pdf-watermark {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-30deg);
+  color: rgba(220, 38, 38, 0.1);
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 72px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.pdf-letterhead {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #1f2328;
+  font-family: Inter, system-ui, sans-serif;
+}
+.pdf-dept {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.pdf-kind {
+  margin-top: 2px;
+  color: #59636e;
+  font-size: 11px;
+}
+.pdf-ref {
+  color: #59636e;
+  font-size: 11px;
+  text-align: right;
+}
+.pdf-title {
+  margin: 22px 0 14px;
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.pdf-meta {
+  width: 100%;
+  margin-bottom: 18px;
+  border-collapse: collapse;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 11px;
+}
+.pdf-meta th,
+.pdf-meta td {
+  padding: 5px 8px;
+  border: 1px solid #d8dee4;
+  text-align: left;
+  vertical-align: top;
+}
+.pdf-meta th {
+  width: 18%;
+  background: #f6f8fa;
+  color: #59636e;
+  font-weight: 600;
+}
+.pdf-body {
+  flex: 1;
+}
+.pdf-body p {
+  margin: 0 0 10px;
+  text-align: justify;
+  hyphens: auto;
+}
+.pdf-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 24px;
+  padding-top: 8px;
+  border-top: 1px solid #d8dee4;
+  color: #8c959f;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 10px;
+}
+
+/* the change from a meeting, inside the page */
+.pdf-page .doc-change {
+  font-family: Georgia, 'Times New Roman', serif;
+}
+.pdf-page .doc-note {
+  font-family: Inter, system-ui, sans-serif;
+  text-align: left;
+}
+
+@media (max-width: 640px) {
+  .pdf-page {
+    padding: 24px 20px;
+  }
+}
