@@ -3,10 +3,11 @@ import { formatDate } from '../../format'
 import type { Document } from '../../types'
 
 /** How trustworthy a document is within its topic. Drives the card colour on the timeline. */
-export type Trust = 'best' | 'similar' | 'expired' | 'support' | 'other_scope'
+export type Trust = 'best' | 'meeting' | 'similar' | 'expired' | 'support' | 'other_scope'
 
 export const TRUST: Record<Trust, { color: string; label: string }> = {
   best: { color: '#16a34a', label: 'Betrouwbaar' },
+  meeting: { color: '#6d5bd0', label: 'Geverifieerd uit meeting' },
   similar: { color: '#d97706', label: 'Kopieën' },
   expired: { color: '#dc2626', label: 'Verouderd' },
   support: { color: '#94a3b8', label: 'Ondersteunend' },
@@ -21,6 +22,7 @@ export interface Lane {
 
 /** Where a document comes from. One horizontal lane per source on the timeline. */
 export const LANES: Lane[] = [
+  { id: 'meeting', label: 'Teams-meetings', color: '#6d5bd0' },
   { id: 'rules', label: 'Regelgeving', color: '#94a3b8' },
   { id: 'procedure', label: 'Procedures', color: '#94a3b8' },
   { id: 'client', label: 'Klant', color: '#94a3b8' },
@@ -28,6 +30,7 @@ export const LANES: Lane[] = [
 ]
 
 function laneOf(doc: Document): string {
+  if (doc.meeting) return 'meeting'
   if (doc.folder.toLowerCase().startsWith('teams')) return 'teams'
   if (doc.layer === 'wet' || doc.layer === 'sector') return 'rules'
   if (doc.layer === 'klant') return 'client'
@@ -135,12 +138,23 @@ function buildTopic(topicId: string, docs: Document[], color: string): Topic {
       .filter((b) => b.id !== doc.id && b.country === doc.country && b.modified > doc.modified && neighbours(doc.id).has(b.id))
       .sort((a, b) => Number(laneOf(a) !== laneOf(doc)) - Number(laneOf(b) !== laneOf(doc)) || a.modified.localeCompare(b.modified))[0]?.id
 
+  // A change verified in a meeting overrules the document it contradicts.
+  const replacedInMeeting = new Map(docs.flatMap((d) => (d.meeting ? [[d.meeting.replaces, d] as const] : [])))
+
   const timelineDocs: TimelineDoc[] = docs.map((doc) => {
     const owner = doc.owner ?? 'Geen eigenaar'
     let trust: Trust
     let sub: string
     let replacedBy: string | undefined
-    if (laneBest.has(doc.id)) {
+    const meetingChange = replacedInMeeting.get(doc.id)
+    if (doc.meeting) {
+      trust = 'meeting'
+      sub = `Geverifieerd door ${doc.meeting.verifiedBy}`
+    } else if (meetingChange) {
+      trust = 'expired'
+      replacedBy = meetingChange.id
+      sub = `Vervangen in ${meetingChange.meeting!.title}`
+    } else if (laneBest.has(doc.id)) {
       trust = 'best'
       sub = `Betrouwbaar · ${owner}`
     } else if (doc.country !== home) {

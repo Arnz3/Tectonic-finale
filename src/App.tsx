@@ -3,6 +3,7 @@ import { primaryCluster, type AnalysisEdge } from './analysis'
 import { EdgePanel } from './components/EdgePanel'
 import { PersonPanel } from './components/PersonPanel'
 import { Logo } from './components/Logo'
+import { MeetingDemo } from './components/MeetingDemo'
 import { PreviewPanel } from './components/PreviewPanel'
 import { documents, libraryItems } from './library'
 import { buildTopics, topicForQuestion } from './views/askme/askmeData'
@@ -67,6 +68,7 @@ export default function App() {
   const [query, setQuery] = useState('')
   const [viewId, setViewId] = useState(loadViewId)
   const [sort, setSort] = useState<SortState>({ key: 'name', dir: 'asc' })
+  const [meetingOpen, setMeetingOpen] = useState(false)
   const [panel, setPanel] = useState<
     | { kind: 'document'; doc: Document }
     | { kind: 'edge'; edge: AnalysisEdge }
@@ -140,6 +142,9 @@ export default function App() {
             </button>
           ))}
         </div>
+        <button className={`meeting-button${meetingOpen ? ' active' : ''}`} onClick={() => setMeetingOpen((o) => !o)}>
+          <span className="meeting-button-dot" aria-hidden /> Teams-meeting
+        </button>
         <span className="avatar" aria-label="Ingelogd als AC">
           AC
         </span>
@@ -212,6 +217,17 @@ export default function App() {
         {panel?.kind === 'edge' && <EdgePanel edge={panel.edge} onClose={() => setPanel(null)} />}
         {panel?.kind === 'person' && <PersonPanel author={panel.author} docIds={panel.docIds} onClose={() => setPanel(null)} />}
       </div>
+
+      <MeetingDemo
+        open={meetingOpen}
+        onClose={() => setMeetingOpen(false)}
+        onShowTopic={(topic) => {
+          setPanel(null)
+          setMeetingOpen(false)
+          changeView('askme')
+          setQuery(topic)
+        }}
+      />
     </div>
   )
 }

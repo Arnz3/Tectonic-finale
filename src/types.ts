@@ -33,6 +33,22 @@ export interface Document {
   modified: string
   text: string
   history: HistoryEntry[]
+  /** Set for a change that was said in a meeting and verified by a person (see src/meetings.ts). */
+  meeting?: MeetingChange
+}
+
+export interface MeetingChange {
+  title: string
+  date: string
+  speaker: string
+  /** The literal line from the transcript. */
+  line: string
+  oldValue: string
+  newValue: string
+  /** The document this change replaces. */
+  replaces: string
+  verifiedBy: string
+  verifiedAt: string
 }
 
 export interface FileItem {

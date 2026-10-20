@@ -242,7 +242,12 @@ export function createTimeline(opts: {
     lanesSel.select('.askme-lane-count').text((d) => `${d.total} ${d.total === 1 ? 'bron' : 'bronnen'}`).transition(t()).attr('y', (d) => d.h / 2 + 18)
     lanesSel
       .select('.askme-lane-none')
-      .text((d) => (d.total > 0 && !docs.some((r) => r.lane === d.lane.id && r.trust === 'best') ? 'Geen betrouwbare bron' : ''))
+      .text((d) =>
+        // A lane is covered by its own trusted document, by a verified meeting change, or by being replaced through one.
+        d.total > 0 && !docs.some((r) => r.lane === d.lane.id && (r.trust === 'best' || r.trust === 'meeting' || r.replacedBy?.startsWith('meeting-')))
+          ? 'Geen betrouwbare bron'
+          : '',
+      )
       .transition(t())
       .attr('y', (d) => d.h / 2 + 36)
 
@@ -323,8 +328,10 @@ export function createTimeline(opts: {
     for (const d of docs) {
       const target = d.replacedBy ? byId.get(d.replacedBy) : undefined
       if (!target || (d.card.hidden && !d.card.isLead)) continue
-      g.append('path').attr('class', 'askme-conn red').attr('d', elbow(d, target))
-      g.append('circle').attr('class', 'askme-dot red').attr('cx', d.right + 2).attr('cy', d.ty).attr('r', 4.5)
+      // Replaced by a change verified in a meeting: purple, like the meeting card.
+      const tone = target.trust === 'meeting' ? 'purple' : 'red'
+      g.append('path').attr('class', `askme-conn ${tone}`).attr('d', elbow(d, target))
+      g.append('circle').attr('class', `askme-dot ${tone}`).attr('cx', d.right + 2).attr('cy', d.ty).attr('r', 4.5)
     }
 
     // Recommended: arrow up to today, or up to the next card on the same row.

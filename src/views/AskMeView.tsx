@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { libraryItems } from '../library'
+import { useMeetingChanges } from '../meetings'
+import { MeetingChangePanel } from './askme/MeetingChangePanel'
 import type { Document, ViewProps } from '../types'
 import { formatDate } from '../format'
 import { contactFor, LEVEL_LABEL } from '../skills'
@@ -10,14 +12,16 @@ import { createTimeline, type CardAnchor, type TimelineCallbacks } from './askme
 import { createTopicGraph } from './askme/topicGraph'
 
 const fileById = new Map(libraryItems.filter((f) => f.document).map((f) => [f.id, f]))
-const LEGEND: Trust[] = ['best', 'similar', 'expired', 'support', 'other_scope']
+const LEGEND: Trust[] = ['meeting', 'best', 'similar', 'expired', 'support', 'other_scope']
 
 /**
  * ASKME: topics of the library as a graph; a topic (clicked, or recognised in a question typed
  * in the search box) opens a timeline that shows which source to trust.
  */
 export function AskMeView({ items, onOpen, query }: ViewProps) {
-  const docs = useMemo(() => items.flatMap((i) => (i.document ? [i.document] : [])), [items])
+  const changes = useMeetingChanges()
+  const docs = useMemo(() => [...items.flatMap((i) => (i.document ? [i.document] : [])), ...changes], [items, changes])
+  const [change, setChange] = useState<Document | null>(null)
   const topics = useMemo(() => buildTopics(docs), [docs])
   const asked = useMemo(() => topicForQuestion(query, topics, docs), [query, topics, docs])
   const [picked, setPicked] = useState<string | null>(null)
@@ -30,6 +34,9 @@ export function AskMeView({ items, onOpen, query }: ViewProps) {
   if (docs.length === 0) return <div className="graph-empty">Geen documenten gevonden voor deze zoekopdracht.</div>
 
   const openDoc = (id: string) => {
+    const meetingChange = changes.find((c) => c.id === id)
+    if (meetingChange) return setChange(meetingChange)
+    setChange(null)
     const file = fileById.get(id)
     if (file) onOpen(file)
   }
@@ -67,6 +74,7 @@ export function AskMeView({ items, onOpen, query }: ViewProps) {
       ) : (
         <AskMeTopics key={topics.map((t) => t.id).join('|')} topics={topics} onOpenTopic={setPicked} />
       )}
+      {change && <MeetingChangePanel doc={change} onOpenDoc={openDoc} onClose={() => setChange(null)} />}
     </div>
   )
 }
@@ -122,7 +130,8 @@ function AskMeTimeline({ topic, onOpenDoc }: { topic: Topic; onOpenDoc: (id: str
   }, [topic])
 
   const used = new Set(topic.docs.map((d) => d.trust))
-  const replaced = topic.docs.some((d) => d.replacedBy)
+  const replaced = topic.docs.some((d) => d.replacedBy && !d.replacedBy.startsWith('meeting-'))
+  const replacedInMeeting = topic.docs.some((d) => d.replacedBy?.startsWith('meeting-'))
   return (
     <div className="askme-stage-wrap">
       <div className="askme-scroll">
@@ -160,6 +169,12 @@ function AskMeTimeline({ topic, onOpenDoc }: { topic: Topic; onOpenDoc: (id: str
             Vervangen door
           </span>
         )}
+        {replacedInMeeting && (
+          <span>
+            <span className="askme-legend-line purple" aria-hidden />
+            Vervangen in meeting
+          </span>
+        )}
       </div>
     </div>
   )
@@ -177,19 +192,36 @@ function AnswerCard({ question, topic, docs, onOpenDoc }: { question: string; to
   }
   const { doc, quote, others } = answer
   const contact = contactFor(topic.id)
+  const m = doc.meeting
+  const replaced = m ? docs.find((d) => d.id === m.replaces) : undefined
   return (
-    <div className="answer">
+    <div className={`answer${m ? ' answer-meeting' : ''}`}>
       <div className="answer-label">
-        <span className="answer-dot" aria-hidden /> Betrouwbaarste bron
+        <span className="answer-dot" aria-hidden /> {m ? 'Gewijzigd in een meeting · geverifieerd' : 'Betrouwbaarste bron'}
       </div>
       {quote && <blockquote className="answer-quote">{quote}</blockquote>}
-      <div className="answer-meta">
-        <button className="answer-doc" onClick={() => onOpenDoc(doc.id)}>
-          {doc.title}
-        </button>
-        <span>{doc.owner ?? 'Geen eigenaar'}</span>
-        <span>Bijgewerkt {formatDate(doc.modified)}</span>
-      </div>
+      {m ? (
+        <div className="answer-meta">
+          <button className="answer-doc" onClick={() => onOpenDoc(doc.id)}>
+            {m.title}
+          </button>
+          <span>{formatDate(m.date)}</span>
+          <span>Geverifieerd door {m.verifiedBy}</span>
+          {replaced && (
+            <span>
+              Was {m.oldValue} in “{replaced.title}”
+            </span>
+          )}
+        </div>
+      ) : (
+        <div className="answer-meta">
+          <button className="answer-doc" onClick={() => onOpenDoc(doc.id)}>
+            {doc.title}
+          </button>
+          <span>{doc.owner ?? 'Geen eigenaar'}</span>
+          <span>Bijgewerkt {formatDate(doc.modified)}</span>
+        </div>
+      )}
       {contact && (
         <div className="answer-contact">
           Vraag het aan <strong>{contact.person}</strong>

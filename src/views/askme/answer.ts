@@ -37,9 +37,11 @@ function sentences(text: string, title: string): string[] {
 export function answerFor(question: string, topic: Topic, docs: Document[]): Answer | undefined {
   const byId = new Map(docs.map((d) => [d.id, d]))
   const best = topic.docs
-    .filter((d) => d.trust === 'best')
+    .filter((d) => d.trust === 'best' || d.trust === 'meeting')
     .sort(
       (a, b) =>
+        // A change verified in a meeting is the newest confirmed knowledge.
+        Number(b.trust === 'meeting') - Number(a.trust === 'meeting') ||
         // A client agreement only holds for that client, so it is not the general answer.
         Number(a.lane === 'client') - Number(b.lane === 'client') ||
         Number(b.id in analysis.recommended) - Number(a.id in analysis.recommended) ||

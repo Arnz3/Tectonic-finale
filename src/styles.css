@@ -1473,3 +1473,28 @@ button.crumb:hover {
   color: var(--muted);
   font-size: 12px;
 }
+
+/* Changes verified in a meeting: purple */
+:root {
+  --meeting: #6d5bd0;
+  --meeting-soft: #f3f1fd;
+  --meeting-line: #d9d3f7;
+}
+.askme-conn.purple {
+  stroke: var(--meeting);
+  stroke-dasharray: 4 3;
+}
+.askme-dot.purple {
+  fill: var(--meeting);
+}
+.askme-card-bg.t-meeting {
+  fill: var(--meeting-soft);
+  stroke: var(--meeting);
+  stroke-width: 1.5;
+}
+.askme-card:hover .askme-card-bg.t-meeting {
+  stroke: #5242b8;
+}
+.askme-legend-line.purple {
+  background: var(--meeting);
+}
