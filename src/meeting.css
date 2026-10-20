@@ -602,3 +602,20 @@
   font-size: 12px;
   font-weight: 600;
 }
+
+/* Where the original document came from */
+.origin-meta {
+  margin-top: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+.origin-replaced {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--meeting-soft);
+  color: #4c3db0;
+  font-size: 12px;
+  font-weight: 600;
+}

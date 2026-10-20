@@ -3,6 +3,7 @@ import { PdfPage } from '../../components/PdfPage'
 import { formatDate } from '../../format'
 import { allDocuments } from '../../meetings'
 import type { Document } from '../../types'
+import { creatorOf } from './askmeData'
 
 /**
  * A change from a meeting, shown inside the original document: the overruled sentence is struck
@@ -51,6 +52,47 @@ export function MeetingChangePanel({ doc, onOpenDoc, onClose }: { doc: Document;
           </footer>
         </blockquote>
       </div>
+
+      {original && (
+        <>
+          <h3>Origineel document</h3>
+          <dl className="preview-meta origin-meta">
+            <dt>Bestand</dt>
+            <dd>{original.filename}</dd>
+            <dt>Opgesteld door</dt>
+            <dd>{creatorOf(original)}</dd>
+            <dt>Opgesteld op</dt>
+            <dd>{formatDate(original.created)}</dd>
+            <dt>Eigenaar</dt>
+            <dd>{original.owner ?? <span className="warning">Geen eigenaar</span>}</dd>
+            <dt>Laatst herzien</dt>
+            <dd>
+              {formatDate(original.modified)}
+              {original.history[0] && ` door ${original.history[0].author}`}
+            </dd>
+            <dt>Map</dt>
+            <dd>{original.folder}</dd>
+            <dt>Status nu</dt>
+            <dd>
+              <span className="origin-replaced">Overschreven door {m.title}</span>
+            </dd>
+          </dl>
+        </>
+      )}
+
+      <h3>Wijziging</h3>
+      <dl className="preview-meta origin-meta">
+        <dt>Gezegd door</dt>
+        <dd>
+          {m.speaker} in {m.title}
+        </dd>
+        <dt>Datum</dt>
+        <dd>{formatDate(m.date)}</dd>
+        <dt>Geverifieerd door</dt>
+        <dd>
+          <span className="meeting-verified">✓ {m.verifiedBy}</span> · {formatDate(m.verifiedAt)}
+        </dd>
+      </dl>
 
       <h3>Document</h3>
       {original && <PdfPage doc={original} mark={{ sentence: m.oldSentence, node: change }} />}

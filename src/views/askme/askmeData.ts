@@ -148,7 +148,8 @@ function buildTopic(topicId: string, docs: Document[], color: string): Topic {
     const meetingChange = replacedInMeeting.get(doc.id)
     if (doc.meeting) {
       trust = 'meeting'
-      sub = `Geverifieerd door ${doc.meeting.verifiedBy}`
+      const original = byId.get(doc.meeting.replaces)
+      sub = original ? `Origineel: ${creatorOf(original)} · ✓ ${doc.meeting.verifiedBy}` : `Geverifieerd door ${doc.meeting.verifiedBy}`
     } else if (meetingChange) {
       trust = 'expired'
       replacedBy = meetingChange.id
@@ -179,7 +180,7 @@ function buildTopic(topicId: string, docs: Document[], color: string): Topic {
       sub,
       group: groupOf.get(doc.id),
       replacedBy,
-      tooltip: [doc.title, `${owner} · ${formatDate(doc.modified)}`, doc.folder],
+      tooltip: doc.meeting ? meetingTooltip(doc, byId.get(doc.meeting.replaces)) : [doc.title, `${owner} · ${formatDate(doc.modified)}`, doc.folder],
     }
   })
 
@@ -192,6 +193,26 @@ function buildTopic(topicId: string, docs: Document[], color: string): Topic {
 
   const issues = timelineDocs.filter((d) => d.trust === 'expired').length + Object.keys(groups).length
   return { id: topicId, title: capitalize(topicId), color, docs: timelineDocs, groups, issues }
+}
+
+/** Who first wrote a document: the author of its oldest change, else its owner. */
+export function creatorOf(doc: Document): string {
+  const first = [...doc.history].sort((a, b) => a.date.localeCompare(b.date))[0]
+  return first?.author ?? doc.owner ?? 'onbekend'
+}
+
+/** Tooltip of a meeting change: what changed, and where the original came from. */
+function meetingTooltip(doc: Document, original: Document | undefined): string[] {
+  const m = doc.meeting!
+  const lines = [doc.title, `${m.oldValue} → ${m.newValue} · ${m.title}, ${formatDate(m.date)}`, `Gezegd door ${m.speaker} · geverifieerd door ${m.verifiedBy}`]
+  if (original) {
+    lines.push(
+      `Origineel: ${original.title}`,
+      `Opgesteld door ${creatorOf(original)} op ${formatDate(original.created)} · eigenaar ${original.owner ?? 'geen'}`,
+      `Laatst herzien ${formatDate(original.modified)} · ${original.folder}`,
+    )
+  }
+  return lines
 }
 
 function mostCommon<T>(values: T[]): T {
