@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Sparkle } from './Sparkle'
 import { DEMO_MEETING, detectSignal, parseAmount, resetMeetingChanges, verifySignal, type Signal } from '../meetings'
 
 const LINE_INTERVAL_MS = 1400
@@ -79,7 +80,7 @@ export function MeetingDemo({ open, onClose, onShowTopic }: { open: boolean; onC
         <div className={`island${expanded ? ' expanded' : ''}`} role="status" aria-live="polite">
           {!expanded ? (
             <button className="island-pill" onClick={() => setExpanded(true)}>
-              <span className="island-dot" aria-hidden />
+              <Sparkle size={16} />
               {step === 'asking' || step === 'editing'
                 ? '1 wijziging te bevestigen'
                 : step === 'verified'
@@ -90,7 +91,11 @@ export function MeetingDemo({ open, onClose, onShowTopic }: { open: boolean; onC
             <div className="island-card">
               <div className="island-head">
                 <span className="island-brand">
-                  <span className="island-dot" aria-hidden /> Graffify · voor {signal.verifier}
+                  <Sparkle size={18} />
+                  <span>
+                    <strong>Graffify in Copilot</strong>
+                    <span className="island-for">Voor {signal.verifier} · alleen jij ziet dit</span>
+                  </span>
                 </span>
                 <button className="island-min" onClick={() => setExpanded(false)} aria-label="Verkleinen">
                   –
@@ -197,6 +202,25 @@ export function MeetingDemo({ open, onClose, onShowTopic }: { open: boolean; onC
               ✕
             </button>
           </header>
+          <div className="copilot-tabs" role="tablist" aria-label="Meetingpaneel">
+            <span role="tab" aria-selected="true" className="active">
+              <Sparkle size={14} /> Copilot
+            </span>
+            <span role="tab" aria-selected="false">
+              Transcript
+            </span>
+          </div>
+          {signal && (
+            <div className="copilot-summary">
+              <Sparkle size={16} />
+              <div>
+                <strong>1 wijziging gevonden</strong> die afwijkt van de betrouwbare bron: {signal.topic} {signal.oldValue} → {signal.newValue}.
+                {(step === 'asking' || step === 'editing') && ` Gevraagd aan ${signal.verifier}.`}
+                {step === 'verified' && ` Geverifieerd door ${signal.verifier}.`}
+                {step === 'rejected' && ' Afgewezen, er verandert niets.'}
+              </div>
+            </div>
+          )}
           <ol className="transcript">
             {lines.slice(0, shown).map((l, i) => (
               <li key={i} className={i === signalLine ? 'flagged' : ''}>
@@ -215,7 +239,11 @@ export function MeetingDemo({ open, onClose, onShowTopic }: { open: boolean; onC
                 </span>
               </li>
             ))}
-            {shown < lines.length && <li className="transcript-typing">Graffify analyseert het gesprek…</li>}
+            {shown < lines.length && (
+              <li className="transcript-typing">
+                <Sparkle size={14} /> Copilot luistert mee en vergelijkt met Graffify…
+              </li>
+            )}
           </ol>
           <footer className="meeting-foot">
             <span>Demo: vast transcript, fictieve personen</span>
