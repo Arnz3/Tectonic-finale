@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { recommendationsFor } from '../analysis'
 import { formatDate } from '../format'
 import type { Document } from '../types'
@@ -8,6 +9,12 @@ const countryLabel: Record<Document['country'], string> = { BE: 'België', NL: '
 
 export function PreviewPanel({ doc, query, onClose }: { doc: Document; query: string; onClose: () => void }) {
   const reasons = recommendationsFor(useVoteSummaries(query))[doc.id]
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
   return (
     <aside className="preview-panel" aria-label="Voorbeeld">
       <div className="preview-header">
@@ -18,31 +25,23 @@ export function PreviewPanel({ doc, query, onClose }: { doc: Document; query: st
       </div>
 
       <dl className="preview-meta">
-        <dt>Bestand</dt>
-        <dd>{doc.filename}</dd>
-        <dt>Map</dt>
-        <dd>{doc.folder}</dd>
-        <dt>Land</dt>
-        <dd>{countryLabel[doc.country]}</dd>
-        <dt>Onderwerp</dt>
-        <dd>{doc.topic}</dd>
-        <dt>Laag</dt>
-        <dd>{doc.layer}</dd>
         <dt>Status</dt>
         <dd>
           <span className={`status status-${doc.status}`}>{doc.status}</span>
         </dd>
         <dt>Eigenaar</dt>
         <dd>{doc.owner ?? <span className="warning">Geen eigenaar</span>}</dd>
-        <dt>Gemaakt</dt>
-        <dd>{formatDate(doc.created)}</dd>
         <dt>Gewijzigd</dt>
         <dd>{formatDate(doc.modified)}</dd>
+        <dt>Land</dt>
+        <dd>{countryLabel[doc.country]}</dd>
+        <dt>Map</dt>
+        <dd>{doc.folder}</dd>
       </dl>
 
       {reasons && (
         <div className="recommended-box">
-          <div className="recommended-title">✓ Aanbevolen document</div>
+          <div className="recommended-title">Waarom betrouwbaar</div>
           <ul>
             {reasons.map((r) => (
               <li key={r}>{r}</li>

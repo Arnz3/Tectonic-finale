@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { libraryItems } from '../library'
-import type { ViewProps } from '../types'
+import type { Document, ViewProps } from '../types'
+import { formatDate } from '../format'
+import { answerFor } from './askme/answer'
 import { buildTopics, topicForQuestion, TRUST, type Topic, type Trust } from './askme/askmeData'
 import { createTimeline, type TimelineCallbacks } from './askme/timeline'
 import { createTopicGraph } from './askme/topicGraph'
@@ -45,22 +47,21 @@ export function AskMeView({ items, onOpen, query }: ViewProps) {
             )}
             <strong>{topic.title}</strong>
             <span className="askme-hint">
-              {topic.docs.length} {topic.docs.length === 1 ? 'bron' : 'bronnen'}, van oud naar nieuw. Klik op een kaartje om het document te
-              openen.
-              {asked && ' Maak de zoekbalk leeg om alle onderwerpen te zien.'}
+              {topic.docs.length} {topic.docs.length === 1 ? 'bron' : 'bronnen'}
             </span>
           </>
         ) : (
           <span className="askme-hint">
-            {query
-              ? 'Geen onderwerp herkend in je vraag. Kies hieronder een onderwerp.'
-              : 'Klik op een onderwerp om de tijdlijn te openen, of stel een vraag in de zoekbalk.'}
+            {query ? 'Geen onderwerp herkend in je vraag. Kies hieronder een onderwerp.' : 'Kies een onderwerp of stel een vraag.'}
           </span>
         )}
       </div>
 
       {topic ? (
-        <AskMeTimeline key={topic.id} topic={topic} onOpenDoc={openDoc} />
+        <>
+          <AnswerCard question={query} topic={topic} docs={docs} onOpenDoc={openDoc} />
+          <AskMeTimeline key={topic.id} topic={topic} onOpenDoc={openDoc} />
+        </>
       ) : (
         <AskMeTopics key={topics.map((t) => t.id).join('|')} topics={topics} onOpenTopic={setPicked} />
       )}
@@ -80,7 +81,7 @@ function AskMeTopics({ topics, onOpenTopic }: { topics: Topic[]; onOpenTopic: (i
       stage: stageRef.current!,
       svgEl: svgRef.current!,
       tip: tipRef.current!,
-      centerTitle: 'Documenten',
+      centerTitle: 'Alle kennis',
       topics,
       callbacks,
     })
@@ -121,6 +122,7 @@ function AskMeTimeline({ topic, onOpenDoc }: { topic: Topic; onOpenDoc: (id: str
   }, [expanded])
 
   const used = new Set(topic.docs.map((d) => d.trust))
+  const replaced = topic.docs.some((d) => d.replacedBy)
   return (
     <div className="askme-stage-wrap">
       <div className="askme-scroll">
@@ -132,15 +134,54 @@ function AskMeTimeline({ topic, onOpenDoc }: { topic: Topic; onOpenDoc: (id: str
       <div className="askme-legend">
         {LEGEND.filter((k) => used.has(k)).map((k) => (
           <span key={k}>
-            <span className="askme-legend-icon" style={{ background: TRUST[k].color }} aria-hidden>
-              <svg width="14" height="14" viewBox="-8 -8 16 16">
-                <path d="M-4.5 -6.5h5.5l3.5 3.5v9.5h-9z M1 -6.5v3.5h3.5 M-2 0.5h4 M-2 3h4" />
-              </svg>
-            </span>
+            <span className="askme-legend-dot" style={{ background: TRUST[k].color }} aria-hidden />
             {TRUST[k].label}
           </span>
         ))}
+        <span>
+          <span className="askme-legend-line green" aria-hidden />
+          Geldt tot vandaag
+        </span>
+        {replaced && (
+          <span>
+            <span className="askme-legend-line red" aria-hidden />
+            Vervangen door
+          </span>
+        )}
       </div>
+    </div>
+  )
+}
+
+function AnswerCard({ question, topic, docs, onOpenDoc }: { question: string; topic: Topic; docs: Document[]; onOpenDoc: (id: string) => void }) {
+  const answer = useMemo(() => answerFor(question, topic, docs), [question, topic, docs])
+  if (!answer) {
+    return (
+      <div className="answer answer-none">
+        <div className="answer-label">Geen betrouwbare bron</div>
+        <p>Geen enkel document over {topic.title.toLowerCase()} is goedgekeurd en actueel.</p>
+      </div>
+    )
+  }
+  const { doc, quote, others } = answer
+  return (
+    <div className="answer">
+      <div className="answer-label">
+        <span className="answer-dot" aria-hidden /> Betrouwbaarste bron
+      </div>
+      {quote && <blockquote className="answer-quote">{quote}</blockquote>}
+      <div className="answer-meta">
+        <button className="answer-doc" onClick={() => onOpenDoc(doc.id)}>
+          {doc.title}
+        </button>
+        <span>{doc.owner ?? 'Geen eigenaar'}</span>
+        <span>Bijgewerkt {formatDate(doc.modified)}</span>
+      </div>
+      {others > 0 && (
+        <div className="answer-warning">
+          {others} {others === 1 ? 'andere versie is' : 'andere versies zijn'} verouderd of een kopie. Die zie je hieronder op de tijdlijn.
+        </div>
+      )}
     </div>
   )
 }

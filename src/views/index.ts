@@ -1,10 +1,10 @@
 import type { ComponentType } from 'react'
 import type { ViewProps } from '../types'
 import { AskMeView } from './AskMeView'
-import { CompactView } from './CompactView'
+// import { CompactView } from './CompactView'
 // import { KnowledgeGraphView } from './KnowledgeGraphView'
 import { ListView } from './ListView'
-import { TilesView } from './TilesView'
+// import { TilesView } from './TilesView'
 
 export interface ViewDefinition {
   id: string
@@ -30,10 +30,10 @@ export interface ViewDefinition {
  * it shows up in the view switcher automatically.
  */
 export const views: ViewDefinition[] = [
-  { id: 'list', label: 'Lijst', icon: '☰', component: ListView },
-  { id: 'tiles', label: 'Tegels', icon: '▦', component: TilesView },
-  { id: 'compact', label: 'Compact', icon: '⋮⋮', component: CompactView },
-  // Hidden for the Graffify demo; uncomment to show the original Kennisgraaf again.
+  { id: 'askme', label: 'Inzicht', icon: '', component: AskMeView, scope: 'library', search: 'question' },
+  { id: 'list', label: 'Bestanden', icon: '', component: ListView },
+  // Hidden in the minimal design; uncomment to show them again.
+  // { id: 'tiles', label: 'Tegels', icon: '▦', component: TilesView },
+  // { id: 'compact', label: 'Compact', icon: '⋮⋮', component: CompactView },
   // { id: 'graph', label: 'Kennisgraaf', icon: '◉', component: KnowledgeGraphView, scope: 'library' },
-  { id: 'askme', label: 'Graffify', icon: '✦', logo: '/graffify-logo.png', component: AskMeView, scope: 'library', search: 'question' },
 ]

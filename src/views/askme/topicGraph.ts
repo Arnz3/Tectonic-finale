@@ -1,17 +1,21 @@
-// D3 graph: the library in the centre, its topics around it. Clicking a topic opens its timeline.
+// D3 graph: the library in the centre, its topics on a fixed ring around it.
+// Positions are deterministic, so the picture is the same every time. Clicking a topic opens its timeline.
 import * as d3 from 'd3'
 import type { Topic } from './askmeData'
 
 const HEIGHT = 560
-const LIBRARY_GLYPH = 'M-9 -6h6l2 2.5h10v10h-18z M-9 -1.5h18'
+const OK = '#16a34a'
+const ATTENTION = '#d97706'
 
-interface GraphNode extends d3.SimulationNodeDatum {
+interface GraphNode {
   id: string
   kind: 'center' | 'topic'
   title: string
-  color: string
   count: number
+  issues: number
   r: number
+  x: number
+  y: number
 }
 
 export function createTopicGraph(opts: {
@@ -28,74 +32,104 @@ export function createTopicGraph(opts: {
   svg.selectAll('*').remove()
   const gLinks = svg.append('g')
   const gNodes = svg.append('g')
-  let W = Math.max(320, stage.clientWidth)
   let opening = false
   stage.style.height = `${HEIGHT}px`
+
+  const total = topics.reduce((n, t) => n + t.docs.length, 0)
+  const nodes: GraphNode[] = [
+    { id: '__center', kind: 'center', title: centerTitle, count: total, issues: 0, r: 46, x: 0, y: 0 },
+    ...topics.map((t): GraphNode => ({
+      id: t.id,
+      kind: 'topic',
+      title: t.title,
+      count: t.docs.length,
+      issues: t.issues,
+      r: 26 + Math.sqrt(t.docs.length) * 6,
+      x: 0,
+      y: 0,
+    })),
+  ]
+
+  function layout(W: number) {
+    const cx = W / 2
+    const cy = HEIGHT / 2 - 16
+    const rx = Math.min(W / 2 - 110, 330)
+    const ry = HEIGHT / 2 - 92
+    nodes[0].x = cx
+    nodes[0].y = cy
+    nodes.slice(1).forEach((n, i, all) => {
+      const a = -Math.PI / 2 + (i / all.length) * Math.PI * 2
+      n.x = cx + Math.cos(a) * rx
+      n.y = cy + Math.sin(a) * ry
+    })
+  }
+
+  let W = Math.max(360, stage.clientWidth)
+  layout(W)
   svg.attr('viewBox', `0 0 ${W} ${HEIGHT}`)
 
-  const nodes: GraphNode[] = [
-    { id: '__center', kind: 'center', title: centerTitle, color: '#03787c', count: 0, r: 44, x: W / 2, y: HEIGHT / 2, fx: W / 2, fy: HEIGHT / 2 },
-    ...topics.map((t, i): GraphNode => {
-      const a = (i / topics.length) * Math.PI * 2
-      return {
-        id: t.id,
-        kind: 'topic',
-        title: t.title,
-        color: t.color,
-        count: t.docs.length,
-        r: 28 + Math.sqrt(t.docs.length) * 7,
-        x: W / 2 + Math.cos(a) * 20,
-        y: HEIGHT / 2 + Math.sin(a) * 20,
-      }
-    }),
-  ]
-  const links: d3.SimulationLinkDatum<GraphNode>[] = topics.map((t) => ({ source: '__center', target: t.id }))
+  const linkSel = gLinks
+    .selectAll('line')
+    .data(nodes.slice(1))
+    .join('line')
+    .attr('class', 'askme-link')
 
-  const linkSel = gLinks.selectAll('line').data(links).join('line').attr('class', 'askme-link')
   const nodeSel = gNodes
     .selectAll<SVGGElement, GraphNode>('g')
     .data(nodes, (d) => d.id)
     .join((enter) => {
       const g = enter.append('g').attr('class', (d) => `askme-node askme-${d.kind}`)
-      g.append('circle')
-        .attr('class', 'askme-bubble')
-        .attr('r', 0)
-        .attr('fill', (d) => (d.kind === 'center' ? d.color : d3.color(d.color)!.copy({ opacity: 0.13 }).formatRgb()))
-        .attr('stroke', (d) => (d.kind === 'center' ? 'none' : d.color))
-      g.filter((d) => d.kind === 'center').append('path').attr('class', 'askme-center-glyph').attr('d', LIBRARY_GLYPH)
+      g.append('circle').attr('class', 'askme-bubble').attr('r', (d) => d.r)
       g.filter((d) => d.kind === 'topic')
-        .append('text')
+        .append('circle')
+        .attr('class', 'askme-health')
+        .attr('r', 5)
+        .attr('cx', (d) => d.r * 0.7)
+        .attr('cy', (d) => -d.r * 0.7)
+        .attr('fill', (d) => (d.issues ? ATTENTION : OK))
+      g.append('text')
         .attr('class', 'askme-count')
         .attr('dy', '0.35em')
-        .attr('fill', (d) => d.color)
         .text((d) => String(d.count))
-      g.append('text').attr('class', 'askme-node-label').attr('y', (d) => d.r + 22).text((d) => d.title)
-      g.filter((d) => d.kind === 'topic')
-        .append('text')
+      g.append('text')
+        .attr('class', 'askme-node-label')
+        .attr('y', (d) => d.r + 20)
+        .text((d) => d.title)
+      g.append('text')
         .attr('class', 'askme-node-sub')
-        .attr('y', (d) => d.r + 40)
-        .text((d) => (d.count === 1 ? 'document' : 'documenten'))
+        .attr('y', (d) => d.r + 37)
+        .classed('attention', (d) => d.kind === 'topic' && d.issues > 0)
+        .text((d) =>
+          d.kind === 'center' ? '' : d.issues ? `${d.issues} ${d.issues === 1 ? 'aandachtspunt' : 'aandachtspunten'}` : 'op orde',
+        )
       return g
     })
+
+  function place() {
+    linkSel
+      .attr('x1', nodes[0].x)
+      .attr('y1', nodes[0].y)
+      .attr('x2', (d) => d.x)
+      .attr('y2', (d) => d.y)
+    nodeSel.attr('transform', (d) => `translate(${d.x},${d.y})`)
+  }
+  place()
+
+  // Fade in once; no movement afterwards.
+  nodeSel
+    .style('opacity', 0)
+    .transition()
+    .duration(reduced ? 0 : 400)
+    .delay((_d, i) => (reduced ? 0 : i * 40))
+    .style('opacity', 1)
 
   nodeSel
     .filter((d) => d.kind === 'topic')
     .attr('tabindex', 0)
     .attr('role', 'button')
-    .attr('aria-label', (d) => `${d.title}: ${d.count} documenten. Open de tijdlijn.`)
-
-  nodeSel
-    .select<SVGCircleElement>('.askme-bubble')
-    .transition()
-    .duration(reduced ? 0 : 600)
-    .delay((_d, i) => (reduced ? 0 : i * 70))
-    .ease(d3.easeBackOut.overshoot(1.4))
-    .attr('r', (d) => d.r)
-
-  nodeSel
-    .filter((d) => d.kind === 'topic')
+    .attr('aria-label', (d) => `${d.title}: ${d.count} documenten, ${d.issues ? `${d.issues} aandachtspunten` : 'op orde'}. Open de tijdlijn.`)
     .on('mouseenter', function (e: MouseEvent, d) {
-      d3.select(this).select('.askme-bubble').transition().duration(150).attr('r', d.r + 5)
+      d3.select(this).classed('hover', true)
       const title = document.createElement('div')
       title.className = 'askme-tip-title'
       title.textContent = d.title
@@ -106,13 +140,11 @@ export function createTopicGraph(opts: {
       moveTip(e)
     })
     .on('mousemove', moveTip)
-    .on('mouseleave', function (_e: MouseEvent, d) {
-      d3.select(this).select('.askme-bubble').transition().duration(150).attr('r', d.r)
+    .on('mouseleave', function () {
+      d3.select(this).classed('hover', false)
       tip.style.opacity = '0'
     })
-    .on('click', (e: MouseEvent, d) => {
-      if (!e.defaultPrevented) open(d)
-    })
+    .on('click', (_e: MouseEvent, d) => open(d))
     .on('keydown', (e: KeyboardEvent, d) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault()
@@ -120,73 +152,13 @@ export function createTopicGraph(opts: {
       }
     })
 
-  nodeSel.call(
-    d3
-      .drag<SVGGElement, GraphNode>()
-      .filter((e: MouseEvent) => !opening && !e.button)
-      .on('start', (e, d) => {
-        if (!e.active) sim.alphaTarget(0.25).restart()
-        d.fx = d.x
-        d.fy = d.y
-        tip.style.opacity = '0'
-      })
-      .on('drag', (e, d) => {
-        d.fx = e.x
-        d.fy = e.y
-      })
-      .on('end', (e, d) => {
-        if (!e.active) sim.alphaTarget(0)
-        if (d.kind !== 'center') {
-          d.fx = null
-          d.fy = null
-        }
-      }),
-  )
-
-  const sim = d3
-    .forceSimulation(nodes)
-    .force(
-      'link',
-      d3
-        .forceLink<GraphNode, d3.SimulationLinkDatum<GraphNode>>(links)
-        .id((d) => d.id)
-        .distance((l) => 150 + (l.target as GraphNode).r)
-        .strength(0.9),
-    )
-    .force('charge', d3.forceManyBody().strength(-900))
-    .force('collide', d3.forceCollide<GraphNode>((d) => d.r + 40))
-    .force('x', d3.forceX(W / 2).strength(0.03))
-    .force('y', d3.forceY(HEIGHT / 2).strength(0.05))
-    .on('tick', () => {
-      for (const d of nodes) {
-        d.x = Math.max(d.r + 10, Math.min(W - d.r - 10, d.x ?? 0))
-        d.y = Math.max(d.r + 10, Math.min(HEIGHT - d.r - 48, d.y ?? 0))
-      }
-      linkSel
-        .attr('x1', (d) => (d.source as GraphNode).x ?? 0)
-        .attr('y1', (d) => (d.source as GraphNode).y ?? 0)
-        .attr('x2', (d) => (d.target as GraphNode).x ?? 0)
-        .attr('y2', (d) => (d.target as GraphNode).y ?? 0)
-      nodeSel.attr('transform', (d) => `translate(${d.x},${d.y})`)
-    })
-
-  // Click: the topic grows, the rest fades, then the timeline opens.
   function open(d: GraphNode) {
     if (opening) return
     opening = true
     tip.style.opacity = '0'
-    sim.stop()
-    const dur = reduced ? 0 : 380
-    nodeSel.filter((n) => n.id !== d.id).transition().duration(dur).style('opacity', 0.08)
+    const dur = reduced ? 0 : 220
+    nodeSel.filter((n) => n.id !== d.id).transition().duration(dur).style('opacity', 0.15)
     linkSel.transition().duration(dur).style('opacity', 0)
-    nodeSel
-      .filter((n) => n.id === d.id)
-      .select('.askme-bubble')
-      .transition()
-      .duration(dur)
-      .ease(d3.easeCubicIn)
-      .attr('r', d.r * 2.2)
-      .style('opacity', 0.35)
     window.setTimeout(() => callbacks.current.onOpenTopic(d.id), dur)
   }
 
@@ -202,20 +174,18 @@ export function createTopicGraph(opts: {
   const ro = new ResizeObserver(() => {
     window.clearTimeout(resizeTimer)
     resizeTimer = window.setTimeout(() => {
-      const w = Math.max(320, stage.clientWidth)
+      const w = Math.max(360, stage.clientWidth)
       if (w === W) return
       W = w
       svg.attr('viewBox', `0 0 ${W} ${HEIGHT}`)
-      nodes[0].fx = W / 2
-      ;(sim.force('x') as d3.ForceX<GraphNode>).x(W / 2)
-      sim.alpha(0.3).restart()
+      layout(W)
+      place()
     }, 120)
   })
   ro.observe(stage)
 
   return {
     destroy() {
-      sim.stop()
       ro.disconnect()
       window.clearTimeout(resizeTimer)
       stage.style.height = ''

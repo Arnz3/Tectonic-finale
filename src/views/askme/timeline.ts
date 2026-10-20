@@ -3,13 +3,13 @@
 import * as d3 from 'd3'
 import { LANES, TRUST, type DocGroup, type Lane, type TimelineDoc, type Topic } from './askmeData'
 
-const M = { left: 196, top: 44, bottom: 56, pad: 18, rowH: 64, cardH: 52 }
-const ICON_R = 17
-const CARD_L = 27 // card left edge → icon centre (the icon sits on the date)
+const M = { left: 160, top: 44, bottom: 52, pad: 16, rowH: 58, cardH: 46 }
+const ICON_R = 5
+const CARD_L = 16 // card left edge → status dot (the dot sits on the date)
+const TEXT_X = 14 // status dot → text
 const GROUP_GAP = 28 // space between cards of an expanded bundle
-const FONT_TITLE = "600 13.5px 'Segoe UI', system-ui, sans-serif"
-const FONT_SUB = "400 12.5px 'Segoe UI', system-ui, sans-serif"
-const GLYPH = 'M-4.5 -6.5h5.5l3.5 3.5v9.5h-9z M1 -6.5v3.5h3.5 M-2 0.5h4 M-2 3h4'
+const FONT_TITLE = "600 13px Inter, system-ui, sans-serif"
+const FONT_SUB = "400 12px Inter, system-ui, sans-serif"
 
 export interface TimelineCallbacks {
   onOpenDoc: (id: string) => void
@@ -114,7 +114,7 @@ export function createTimeline(opts: {
     }
     sub = trunc(sub, 44)
     const chevron = !!g && d.id === leadOf(g)
-    const width = CARD_L + 26 + Math.max(textWidth(title, FONT_TITLE), textWidth(sub, FONT_SUB)) + 16 + (chevron ? 22 : 0)
+    const width = CARD_L + TEXT_X + Math.max(textWidth(title, FONT_TITLE), textWidth(sub, FONT_SUB)) + 16 + (chevron ? 22 : 0)
     return { isLead, hidden, open, chevron, title, sub, width, badge: isLead ? g!.members.length - 1 : 0 }
   }
 
@@ -222,16 +222,14 @@ export function createTimeline(opts: {
         const g = enter.append('g').attr('class', 'askme-lane').attr('transform', (d) => `translate(0,${d.y0})`)
         g.append('rect').attr('class', (_d, i) => `askme-lane-bg${i % 2 ? '' : ' alt'}`).attr('height', (d) => d.h)
         g.append('line').attr('class', 'askme-lane-sep').attr('x1', 0).attr('y1', (d) => d.h).attr('y2', (d) => d.h)
-        g.append('circle').attr('class', 'askme-lane-dot').attr('cx', 28).attr('r', 7).attr('cy', (d) => d.h / 2 - 8).attr('fill', (d) => d.lane.color)
-        g.append('text').attr('class', 'askme-lane-name').attr('x', 46).attr('y', (d) => d.h / 2 - 2).text((d) => d.lane.label)
-        g.append('text').attr('class', 'askme-lane-count').attr('x', 46).attr('y', (d) => d.h / 2 + 18)
-        g.append('text').attr('class', 'askme-lane-none').attr('x', 46).attr('y', (d) => d.h / 2 + 36)
+        g.append('text').attr('class', 'askme-lane-name').attr('x', 24).attr('y', (d) => d.h / 2 - 2).text((d) => d.lane.label)
+        g.append('text').attr('class', 'askme-lane-count').attr('x', 24).attr('y', (d) => d.h / 2 + 18)
+        g.append('text').attr('class', 'askme-lane-none').attr('x', 24).attr('y', (d) => d.h / 2 + 36)
         return g
       })
     lanesSel.transition(t()).attr('transform', (d) => `translate(0,${d.y0})`)
     lanesSel.select('.askme-lane-bg').attr('width', VW).transition(t()).attr('height', (d) => d.h)
     lanesSel.select('.askme-lane-sep').attr('x2', VW).transition(t()).attr('y1', (d) => d.h).attr('y2', (d) => d.h)
-    lanesSel.select('.askme-lane-dot').transition(t()).attr('cy', (d) => d.h / 2 - 8)
     lanesSel.select('.askme-lane-name').transition(t()).attr('y', (d) => d.h / 2 - 2)
     lanesSel.select('.askme-lane-count').text((d) => `${d.total} ${d.total === 1 ? 'bron' : 'bronnen'}`).transition(t()).attr('y', (d) => d.h / 2 + 18)
     lanesSel
@@ -370,13 +368,12 @@ export function createTimeline(opts: {
           .attr('aria-label', (d) => d.title)
           .attr('transform', (d) => `translate(${d.tx - 40},${d.ty})`)
           .style('opacity', 0)
-        g.append('rect').attr('class', 'askme-card-bg').attr('x', -CARD_L).attr('y', -M.cardH / 2).attr('height', M.cardH).attr('rx', 12)
+        g.append('rect').attr('class', 'askme-card-bg').attr('x', -CARD_L).attr('y', -M.cardH / 2).attr('height', M.cardH).attr('rx', 8)
         g.append('circle').attr('class', 'askme-icon').attr('r', ICON_R)
-        g.append('path').attr('class', 'askme-glyph').attr('d', GLYPH)
-        g.append('text').attr('class', 'askme-title').attr('x', 26).attr('y', -4)
-        g.append('text').attr('class', 'askme-sub').attr('x', 26).attr('y', 14)
-        const badge = g.append('g').attr('class', 'askme-badge').attr('transform', 'translate(13,-17)')
-        badge.append('circle').attr('r', 11)
+        g.append('text').attr('class', 'askme-title').attr('x', TEXT_X).attr('y', -3)
+        g.append('text').attr('class', 'askme-sub').attr('x', TEXT_X).attr('y', 13)
+        const badge = g.append('g').attr('class', 'askme-badge').attr('transform', `translate(${-CARD_L},${-M.cardH / 2})`)
+        badge.append('circle').attr('r', 9)
         badge.append('text').attr('text-anchor', 'middle').attr('dy', '0.35em')
         const chev = g.append('g').attr('class', 'askme-chev')
         chev.append('rect').attr('x', -12).attr('y', -14).attr('width', 24).attr('height', 28).attr('fill', 'transparent')

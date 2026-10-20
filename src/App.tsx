@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { primaryCluster, type AnalysisEdge } from './analysis'
 import { EdgePanel } from './components/EdgePanel'
 import { PersonPanel } from './components/PersonPanel'
+import { Logo } from './components/Logo'
 import { PreviewPanel } from './components/PreviewPanel'
 import { documents, libraryItems } from './library'
 import { buildTopics, topicForQuestion } from './views/askme/askmeData'
@@ -121,58 +122,40 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="suite-bar">
-        <span className="waffle">⋮⋮⋮</span>
-        <span className="brand">SharePoint</span>
+      <header className="top-bar">
+        <Logo />
         <input
           className="search"
           type="search"
-          placeholder={questionMode ? 'Stel een vraag, bv. Hoeveel bedragen de maaltijdcheques?' : 'Zoeken in deze bibliotheek'}
+          aria-label={questionMode ? 'Stel een vraag' : 'Zoeken'}
+          placeholder={questionMode ? 'Stel een vraag…' : 'Zoek in bestanden'}
           maxLength={MAX_QUERY_LENGTH}
           value={query}
           onChange={(e) => setQuery(e.target.value.slice(0, MAX_QUERY_LENGTH))}
         />
-        <span className="avatar">AC</span>
+        <div className="view-switcher" role="tablist" aria-label="Weergave">
+          {views.map((v) => (
+            <button key={v.id} role="tab" aria-selected={v.id === view.id} className={v.id === view.id ? 'active' : ''} onClick={() => changeView(v.id)}>
+              {v.label}
+            </button>
+          ))}
+        </div>
+        <span className="avatar" aria-label="Ingelogd als AC">
+          AC
+        </span>
       </header>
 
       <div className="body">
-        <nav className="side-nav">
-          <div className="site-title">Tectonic</div>
-          <a className="active">Documenten</a>
-          <a>Startpagina</a>
-          <a>Pagina's</a>
-          <a>Siteinhoud</a>
-        </nav>
-
         <main className="content">
-          <div className="command-bar">
-            <button disabled title="Nog te ontwerpen">+ Nieuw</button>
-            <button disabled title="Nog te ontwerpen">↑ Uploaden</button>
-            <div className="spacer" />
-            <div className="view-switcher" role="tablist" aria-label="Weergave">
-              {views.map((v) => (
-                <button
-                  key={v.id}
-                  role="tab"
-                  aria-selected={v.id === view.id}
-                  className={v.id === view.id ? 'active' : ''}
-                  onClick={() => changeView(v.id)}
-                >
-                  {v.logo ? <img className="view-logo" src={v.logo} alt="" /> : <span aria-hidden>{v.icon}</span>} {v.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
           <div className="breadcrumb">
             {searching && questionMode ? (
-              <span className="crumb current">Vraag: “{query.trim()}”</span>
+              <span className="crumb current">“{query.trim()}”</span>
             ) : searching ? (
               <span className="crumb current">
                 Zoekresultaten voor “{query.trim()}” ({items.length})
               </span>
             ) : libraryScope ? (
-              <span className="crumb current">Alle documenten ({items.length})</span>
+              <span className="crumb current">Kennisoverzicht</span>
             ) : (
               <>
                 <button className="crumb" onClick={() => setFolderId(null)}>

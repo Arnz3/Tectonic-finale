@@ -6,11 +6,11 @@ import type { Document } from '../../types'
 export type Trust = 'best' | 'similar' | 'expired' | 'support' | 'other_scope'
 
 export const TRUST: Record<Trust, { color: string; label: string }> = {
-  best: { color: '#1e9e63', label: 'Meest betrouwbaar per categorie' },
-  similar: { color: '#f28a1a', label: 'Gelijkaardige documenten (klik om te bekijken)' },
-  expired: { color: '#e5484d', label: 'Verouderd of vervangen' },
-  support: { color: '#98a2b3', label: 'Ondersteunend' },
-  other_scope: { color: '#c5cbd5', label: 'Ander land' },
+  best: { color: '#16a34a', label: 'Betrouwbaar' },
+  similar: { color: '#d97706', label: 'Kopieën' },
+  expired: { color: '#dc2626', label: 'Verouderd' },
+  support: { color: '#94a3b8', label: 'Ondersteunend' },
+  other_scope: { color: '#cbd5e1', label: 'Ander land' },
 }
 
 export interface Lane {
@@ -21,10 +21,10 @@ export interface Lane {
 
 /** Where a document comes from. One horizontal lane per source on the timeline. */
 export const LANES: Lane[] = [
-  { id: 'rules', label: 'Regelgeving', color: '#4a82de' },
-  { id: 'procedure', label: 'Procedures', color: '#8766d6' },
-  { id: 'client', label: 'Klant', color: '#38a477' },
-  { id: 'teams', label: 'Teams & mail', color: '#98a0ae' },
+  { id: 'rules', label: 'Regelgeving', color: '#94a3b8' },
+  { id: 'procedure', label: 'Procedures', color: '#94a3b8' },
+  { id: 'client', label: 'Klant', color: '#94a3b8' },
+  { id: 'teams', label: 'Teams & mail', color: '#94a3b8' },
 ]
 
 function laneOf(doc: Document): string {
@@ -63,9 +63,11 @@ export interface Topic {
   color: string
   docs: TimelineDoc[]
   groups: Record<string, DocGroup>
+  /** Documents that need attention: outdated ones and bundles of copies. */
+  issues: number
 }
 
-const TOPIC_COLORS = ['#8766d6', '#4a82de', '#38a477', '#d99a12', '#e0567a', '#2aa3b8', '#7a8699']
+const TOPIC_COLOR = '#0f172a'
 
 const COUNTRY: Record<Document['country'], string> = { BE: 'België', NL: 'Nederland', DE: 'Duitsland' }
 const STATUS: Record<Document['status'], string> = { goedgekeurd: 'Goedgekeurd', concept: 'Concept', verouderd: 'Verouderd' }
@@ -140,7 +142,7 @@ function buildTopic(topicId: string, docs: Document[], color: string): Topic {
     let replacedBy: string | undefined
     if (laneBest.has(doc.id)) {
       trust = 'best'
-      sub = `${recommended.has(doc.id) ? 'Aanbevolen' : 'Meest betrouwbaar'} · ${owner}`
+      sub = `Betrouwbaar · ${owner}`
     } else if (doc.country !== home) {
       trust = 'other_scope'
       sub = `Geldt voor ${COUNTRY[doc.country]}`
@@ -175,7 +177,8 @@ function buildTopic(topicId: string, docs: Document[], color: string): Topic {
     if (replacement) timelineDocs.find((d) => d.id === newest)!.replacedBy = replacement
   }
 
-  return { id: topicId, title: capitalize(topicId), color, docs: timelineDocs, groups }
+  const issues = timelineDocs.filter((d) => d.trust === 'expired').length + Object.keys(groups).length
+  return { id: topicId, title: capitalize(topicId), color, docs: timelineDocs, groups, issues }
 }
 
 function mostCommon<T>(values: T[]): T {
@@ -190,7 +193,7 @@ export function buildTopics(docs: Document[]): Topic[] {
   for (const d of docs) perTopic.set(d.topic, [...(perTopic.get(d.topic) ?? []), d])
   return [...perTopic.entries()]
     .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0], 'nl'))
-    .map(([id, list], i) => buildTopic(id, list, TOPIC_COLORS[i % TOPIC_COLORS.length]))
+    .map(([id, list]) => buildTopic(id, list, TOPIC_COLOR))
 }
 
 /**

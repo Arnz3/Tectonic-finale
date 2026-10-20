@@ -1,7 +1,7 @@
 import type { FileKind } from '../types'
 
 const meta: Record<FileKind, { label: string; color: string }> = {
-  folder: { label: '', color: '#e8b53a' },
+  folder: { label: '', color: '#94a3b8' },
   word: { label: 'W', color: '#2b579a' },
   excel: { label: 'X', color: '#217346' },
   powerpoint: { label: 'P', color: '#d24726' },
