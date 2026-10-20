@@ -88,4 +88,6 @@ export interface ViewProps {
   query: string
   /** Opens a topic in the Inzicht view. */
   onAskTopic: (topic: string) => void
+  /** Shows a person in the Mensen view. */
+  onShowPerson: (name: string) => void
 }

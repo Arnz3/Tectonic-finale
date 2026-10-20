@@ -213,6 +213,11 @@ export default function App() {
                 changeView('askme')
                 setQuery(topic)
               }}
+              onShowPerson={(name) => {
+                setPanel(null)
+                changeView('skills')
+                setQuery(name)
+              }}
             />
           )}
         </main>
