@@ -70,4 +70,6 @@ export interface ViewProps {
   onSelectPerson: (author: string, docIds: string[]) => void
   /** The current search query (trimmed), empty when not searching. */
   query: string
+  /** Opens a topic in the Inzicht view. */
+  onAskTopic: (topic: string) => void
 }

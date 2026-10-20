@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { libraryItems } from '../library'
 import type { Document, ViewProps } from '../types'
 import { formatDate } from '../format'
+import { contactFor, LEVEL_LABEL } from '../skills'
 import { answerFor } from './askme/answer'
 import { buildTopics, topicForQuestion, TRUST, type Topic, type Trust } from './askme/askmeData'
 import { GroupPopover } from './askme/GroupPopover'
@@ -175,6 +176,7 @@ function AnswerCard({ question, topic, docs, onOpenDoc }: { question: string; to
     )
   }
   const { doc, quote, others } = answer
+  const contact = contactFor(topic.id)
   return (
     <div className="answer">
       <div className="answer-label">
@@ -188,6 +190,13 @@ function AnswerCard({ question, topic, docs, onOpenDoc }: { question: string; to
         <span>{doc.owner ?? 'Geen eigenaar'}</span>
         <span>Bijgewerkt {formatDate(doc.modified)}</span>
       </div>
+      {contact && (
+        <div className="answer-contact">
+          Vraag het aan <strong>{contact.person}</strong>
+          <span className="sk-dots">{[1, 2, 3].map((i) => (i <= contact.level ? '●' : '○')).join('')}</span>
+          <span>{LEVEL_LABEL[contact.level]}</span>
+        </div>
+      )}
       {others > 0 && (
         <div className="answer-warning">
           {others} {others === 1 ? 'andere versie is' : 'andere versies zijn'} verouderd of een kopie. Die zie je hieronder op de tijdlijn.

@@ -40,6 +40,8 @@ export function answerFor(question: string, topic: Topic, docs: Document[]): Ans
     .filter((d) => d.trust === 'best')
     .sort(
       (a, b) =>
+        // A client agreement only holds for that client, so it is not the general answer.
+        Number(a.lane === 'client') - Number(b.lane === 'client') ||
         Number(b.id in analysis.recommended) - Number(a.id in analysis.recommended) ||
         Number(b.lane === 'procedure') - Number(a.lane === 'procedure') ||
         b.date.getTime() - a.date.getTime(),

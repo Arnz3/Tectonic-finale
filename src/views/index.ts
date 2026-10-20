@@ -4,6 +4,7 @@ import { AskMeView } from './AskMeView'
 // import { CompactView } from './CompactView'
 // import { KnowledgeGraphView } from './KnowledgeGraphView'
 import { ListView } from './ListView'
+import { SkillsView } from './SkillsView'
 // import { TilesView } from './TilesView'
 
 export interface ViewDefinition {
@@ -23,6 +24,9 @@ export interface ViewDefinition {
    * 'question': the search box is a question; the view receives all items and reads `query` itself.
    */
   search?: 'filter' | 'question'
+  /** Page heading when not searching, and the search box placeholder. */
+  heading?: string
+  placeholder?: string
 }
 
 /**
@@ -31,6 +35,7 @@ export interface ViewDefinition {
  */
 export const views: ViewDefinition[] = [
   { id: 'askme', label: 'Inzicht', icon: '', component: AskMeView, scope: 'library', search: 'question' },
+  { id: 'skills', label: 'Mensen', icon: '', component: SkillsView, scope: 'library', search: 'question', heading: 'Wie weet wat', placeholder: 'Zoek een persoon of onderwerp' },
   { id: 'list', label: 'Bestanden', icon: '', component: ListView },
   // Hidden in the minimal design; uncomment to show them again.
   // { id: 'tiles', label: 'Tegels', icon: '▦', component: TilesView },

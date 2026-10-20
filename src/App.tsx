@@ -128,7 +128,7 @@ export default function App() {
           className="search"
           type="search"
           aria-label={questionMode ? 'Stel een vraag' : 'Zoeken'}
-          placeholder={questionMode ? 'Stel een vraag…' : 'Zoek in bestanden'}
+          placeholder={view.placeholder ?? (questionMode ? 'Stel een vraag…' : 'Zoek in bestanden')}
           maxLength={MAX_QUERY_LENGTH}
           value={query}
           onChange={(e) => setQuery(e.target.value.slice(0, MAX_QUERY_LENGTH))}
@@ -148,7 +148,9 @@ export default function App() {
       <div className="body">
         <main className="content">
           <div className="breadcrumb">
-            {searching && questionMode ? (
+            {view.heading && !searching ? (
+              <span className="crumb current">{view.heading}</span>
+            ) : searching && questionMode ? (
               <span className="crumb current">“{query.trim()}”</span>
             ) : searching ? (
               <span className="crumb current">
@@ -198,6 +200,10 @@ export default function App() {
               onSelectEdge={(edge) => setPanel({ kind: 'edge', edge })}
               onSelectPerson={(author, docIds) => setPanel({ kind: 'person', author, docIds })}
               query={trimmedQuery}
+              onAskTopic={(topic) => {
+                changeView('askme')
+                setQuery(topic)
+              }}
             />
           )}
         </main>
