@@ -379,3 +379,12 @@
     animation: none;
   }
 }
+
+@media (max-width: 1000px) {
+  .meeting-button {
+    padding: 9px;
+  }
+  .meeting-button-label {
+    display: none;
+  }
+}

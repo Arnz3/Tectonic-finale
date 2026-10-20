@@ -8,6 +8,7 @@ const ICON_R = 5
 const CARD_L = 16 // card left edge → status dot (the dot sits on the date)
 const TEXT_X = 14 // status dot → text
 const GROUP_GAP = 28 // space between cards of an expanded bundle
+const MIN_YEAR_WIDTH = 180 // about one card per year fits next to each other
 const FONT_TITLE = "600 13px Inter, system-ui, sans-serif"
 const FONT_SUB = "400 12px Inter, system-ui, sans-serif"
 
@@ -102,6 +103,8 @@ export function createTimeline(opts: {
   let groups: Record<string, DocGroup> = {}
   let expanded: Record<string, boolean> = {}
   let lanes: Lane[] = []
+  let left = M.left // x where the time axis starts; 0 without lane labels
+  let lastAvailable = 0 // visible width at the last layout
 
   const groupOf = (d: TimelineDoc) => (d.group ? groups[d.group] : undefined)
   const leadOf = (g: DocGroup) => g.members[g.members.length - 1] // the newest document stands for the bundle
@@ -111,7 +114,7 @@ export function createTimeline(opts: {
     const open = !!(g && expanded[g.id])
     const isLead = !!g && !open && d.id === leadOf(g)
     const hidden = !!g && !open && !isLead
-    const title = trunc(d.title, 34)
+    const title = trunc(d.title, 28)
     let sub = d.sub
     if (isLead) {
       const n = g!.members.length - 1
@@ -120,7 +123,7 @@ export function createTimeline(opts: {
       // Cards of an open bundle sit next to each other, not on their date, so show the date.
       sub = `${shortDate.format(d.date)} · ${d.sub}`
     }
-    sub = trunc(sub, 44)
+    sub = trunc(sub, 34)
     const chevron = !!g && d.id === leadOf(g)
     const width = CARD_L + TEXT_X + Math.max(textWidth(title, FONT_TITLE), textWidth(sub, FONT_SUB)) + 16 + (chevron ? 22 : 0)
     return { isLead, hidden, open, chevron, title, sub, width, badge: isLead ? g!.members.length - 1 : 0 }
@@ -131,17 +134,19 @@ export function createTimeline(opts: {
 
   /* ---------- layout ---------- */
   function compute() {
-    W = availableWidth()
     docs.forEach((d) => (d.card = cardFor(d)))
     const years = docs.map((d) => d.date.getFullYear())
     const y0 = Math.min(...years)
     const y1 = Math.max(...years, today.getFullYear())
     const domain: [Date, Date] = [new Date(y0, 0, 1), new Date(y1 + 1, 0, 1)]
+    // Every year gets enough room, so cards stay on one line; a narrow screen scrolls sideways instead.
+    lastAvailable = availableWidth()
+    W = Math.max(lastAvailable, left + 34 + (y1 + 1 - y0) * MIN_YEAR_WIDTH + 60)
 
     // Pick the right margin so the last cards still fit.
     let marginR = 40
     for (let pass = 0; pass < 5; pass++) {
-      x = d3.scaleTime().domain(domain).range([M.left + 34, W - marginR])
+      x = d3.scaleTime().domain(domain).range([left + 34, W - marginR])
       let over = 0
       for (const d of docs) {
         if (d.card.hidden || (d.card.open && d.id !== leadOf(groupOf(d)!))) continue
@@ -175,10 +180,10 @@ export function createTimeline(opts: {
           right = ms[k].left - GROUP_GAP
         }
         // Keep the run inside the lanes: move right if it starts too far left, else left if it sticks out.
-        let shift = Math.max(0, M.left + 12 - ms[0].left)
+        let shift = Math.max(0, left + 12 - ms[0].left)
         if (shift === 0) {
           const over = ms[ms.length - 1].right - (W - 14)
-          if (over > 0) shift = -Math.min(over, ms[0].left - (M.left + 12))
+          if (over > 0) shift = -Math.min(over, ms[0].left - (left + 12))
         }
         ms.forEach((m) => {
           m.left += shift
@@ -214,7 +219,7 @@ export function createTimeline(opts: {
     H = y + M.bottom
     VW = Math.max(W, Math.max(...docs.filter((d) => !d.card.hidden).map((d) => d.right)) + 14)
     stage.style.height = `${H}px`
-    stage.style.width = VW > W ? `${VW}px` : ''
+    stage.style.width = VW > lastAvailable ? `${VW}px` : ''
     svg.attr('viewBox', `0 0 ${VW} ${H}`)
   }
 
@@ -239,6 +244,7 @@ export function createTimeline(opts: {
     lanesSel.select('.askme-lane-bg').attr('width', VW).transition(t()).attr('height', (d) => d.h)
     lanesSel.select('.askme-lane-sep').attr('x2', VW).transition(t()).attr('y1', (d) => d.h).attr('y2', (d) => d.h)
     lanesSel.select('.askme-lane-name').transition(t()).attr('y', (d) => d.h / 2 - 2)
+    lanesSel.selectAll('text').style('display', left ? '' : 'none')
     lanesSel.select('.askme-lane-count').text((d) => `${d.total} ${d.total === 1 ? 'bron' : 'bronnen'}`).transition(t()).attr('y', (d) => d.h / 2 + 18)
     lanesSel
       .select('.askme-lane-none')
@@ -279,7 +285,7 @@ export function createTimeline(opts: {
       .data([0])
       .join('line')
       .attr('class', 'askme-base')
-      .attr('x1', M.left)
+      .attr('x1', left)
       .attr('x2', VW)
       .transition(t())
       .attr('y1', bottom)
@@ -482,7 +488,7 @@ export function createTimeline(opts: {
   const ro = new ResizeObserver(() => {
     window.clearTimeout(resizeTimer)
     resizeTimer = window.setTimeout(() => {
-      if (docs.length === 0 || availableWidth() === W) return
+      if (docs.length === 0 || availableWidth() === lastAvailable) return
       compute()
       drawBackground(0)
       drawCards(0)
@@ -499,6 +505,8 @@ export function createTimeline(opts: {
       docs = topic.docs.map((d) => ({ ...d, card: cardFor(d), tx: 0, ty: 0, left: 0, right: 0, row: 0 }))
       byId = new Map(docs.map((d) => [d.id, d]))
       lanes = LANES.filter((l) => docs.some((d) => d.lane === l.id))
+      // A single category needs no lane label column, which leaves more room horizontally.
+      left = lanes.length > 1 ? M.left : 0
       gCards.selectAll('*').remove()
       gConn.selectAll('*').remove()
       compute()

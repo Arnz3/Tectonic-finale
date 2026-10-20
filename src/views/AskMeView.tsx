@@ -6,7 +6,7 @@ import type { Document, ViewProps } from '../types'
 import { formatDate } from '../format'
 import { contactFor, LEVEL_LABEL } from '../skills'
 import { answerFor } from './askme/answer'
-import { buildTopics, topicForQuestion, TRUST, type Topic, type Trust } from './askme/askmeData'
+import { buildTopics, LANES, topicForQuestion, TRUST, type Topic, type Trust } from './askme/askmeData'
 import { GroupPopover } from './askme/GroupPopover'
 import { createTimeline, type CardAnchor, type TimelineCallbacks } from './askme/timeline'
 import { createTopicGraph } from './askme/topicGraph'
@@ -108,7 +108,17 @@ function AskMeTopics({ topics, onOpenTopic }: { topics: Topic[]; onOpenTopic: (i
   )
 }
 
-function AskMeTimeline({ topic, onOpenDoc }: { topic: Topic; onOpenDoc: (id: string) => void }) {
+function AskMeTimeline({ topic: fullTopic, onOpenDoc }: { topic: Topic; onOpenDoc: (id: string) => void }) {
+  // One category at a time keeps the timeline a single horizontal strip; procedures first.
+  const lanes = LANES.filter((l) => fullTopic.docs.some((d) => d.lane === l.id))
+  const [lane, setLane] = useState(() => (lanes.some((l) => l.id === 'procedure') ? 'procedure' : (lanes[0]?.id ?? 'all')))
+  const topic = useMemo<Topic>(() => {
+    if (lane === 'all') return fullTopic
+    const docs = fullTopic.docs.filter((d) => d.lane === lane)
+    const groups = Object.fromEntries(Object.entries(fullTopic.groups).filter(([, g]) => g.lane === lane))
+    return { ...fullTopic, docs, groups }
+  }, [fullTopic, lane])
+
   // An open bundle of copies is shown as a popover on top of the timeline, so nothing else moves.
   const [openGroup, setOpenGroup] = useState<{ id: string; rect: DOMRect } | null>(null)
   const stageRef = useRef<HTMLDivElement>(null)
@@ -134,6 +144,18 @@ function AskMeTimeline({ topic, onOpenDoc }: { topic: Topic; onOpenDoc: (id: str
   const replacedInMeeting = topic.docs.some((d) => d.replacedBy?.startsWith('meeting-'))
   return (
     <div className="askme-stage-wrap">
+      {lanes.length > 1 && (
+        <div className="lane-filter" role="tablist" aria-label="Categorie">
+          {[...lanes, { id: 'all', label: 'Alles' }].map((l) => {
+            const n = l.id === 'all' ? fullTopic.docs.length : fullTopic.docs.filter((d) => d.lane === l.id).length
+            return (
+              <button key={l.id} role="tab" aria-selected={lane === l.id} className={lane === l.id ? 'active' : ''} onClick={() => setLane(l.id)}>
+                {l.label} <span className="lane-count">{n}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
       <div className="askme-scroll">
         <div className="askme-stage askme-timeline" ref={stageRef}>
           <svg ref={svgRef} role="img" aria-label={`Tijdlijn ${topic.title}`} />

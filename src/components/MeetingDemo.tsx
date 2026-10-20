@@ -41,6 +41,13 @@ export function MeetingDemo({ open, onClose, onShowTopic }: { open: boolean; onC
     return () => window.clearTimeout(timer.current)
   }, [open, shown, lines, signal])
 
+  // Once answered, the island shrinks back to a pill after a few seconds (calm: out of the way).
+  useEffect(() => {
+    if (step !== 'verified' && step !== 'rejected') return
+    const t = window.setTimeout(() => setExpanded(false), 5000)
+    return () => window.clearTimeout(t)
+  }, [step])
+
   function restart() {
     resetMeetingChanges()
     setShown(0)

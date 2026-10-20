@@ -142,8 +142,12 @@ export default function App() {
             </button>
           ))}
         </div>
-        <button className={`meeting-button${meetingOpen ? ' active' : ''}`} onClick={() => setMeetingOpen((o) => !o)}>
-          <span className="meeting-button-dot" aria-hidden /> Teams-meeting
+        <button
+          className={`meeting-button${meetingOpen ? ' active' : ''}`}
+          onClick={() => setMeetingOpen((o) => !o)}
+          aria-label="Teams-meeting"
+        >
+          <span className="meeting-button-dot" aria-hidden /> <span className="meeting-button-label">Teams-meeting</span>
         </button>
         <span className="avatar" aria-label="Ingelogd als AC">
           AC

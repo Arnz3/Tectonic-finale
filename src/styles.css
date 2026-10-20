@@ -1498,3 +1498,48 @@ button.crumb:hover {
 .askme-legend-line.purple {
   background: var(--meeting);
 }
+
+/* Category filter above the timeline */
+.lane-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.lane-filter button {
+  padding: 5px 12px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.lane-filter button:hover {
+  background: var(--hover);
+}
+.lane-filter button.active {
+  background: var(--text);
+  color: #fff;
+}
+.lane-count {
+  margin-left: 2px;
+  opacity: 0.6;
+  font-size: 12px;
+}
+
+@media (max-width: 1000px) {
+  .top-bar {
+    gap: 10px;
+    padding: 0 16px;
+  }
+  .search {
+    min-width: 0;
+  }
+  .view-switcher button {
+    padding: 5px 10px;
+  }
+}
+@media (max-width: 640px) {
+  .avatar {
+    display: none;
+  }
+}
