@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { PdfPage } from '../../components/PdfPage'
 import { formatDate } from '../../format'
-import { currentDocuments } from '../../meetings'
+import { allDocuments } from '../../meetings'
 import type { Document } from '../../types'
 
 /**
@@ -10,7 +10,7 @@ import type { Document } from '../../types'
  */
 export function MeetingChangePanel({ doc, onOpenDoc, onClose }: { doc: Document; onOpenDoc: (id: string) => void; onClose: () => void }) {
   const m = doc.meeting!
-  const original = currentDocuments().find((d) => d.id === m.replaces)
+  const original = allDocuments.find((d) => d.id === m.replaces)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()

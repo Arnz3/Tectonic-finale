@@ -1,15 +1,13 @@
 import { useEffect } from 'react'
-import { recommendationsFor } from '../analysis'
+import { analysis } from '../analysis'
 import { formatDate } from '../format'
 import type { Document } from '../types'
-import { useVoteSummaries } from '../votes'
 import { PdfPage } from './PdfPage'
-import { VoteBox } from './VoteBox'
 
 const countryLabel: Record<Document['country'], string> = { BE: 'België', NL: 'Nederland', DE: 'Duitsland' }
 
-export function PreviewPanel({ doc, query, onClose }: { doc: Document; query: string; onClose: () => void }) {
-  const reasons = recommendationsFor(useVoteSummaries(query))[doc.id]
+export function PreviewPanel({ doc, onClose }: { doc: Document; onClose: () => void }) {
+  const reasons = analysis.recommended[doc.id]
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -50,8 +48,6 @@ export function PreviewPanel({ doc, query, onClose }: { doc: Document; query: st
           </ul>
         </div>
       )}
-
-      {query && <VoteBox docId={doc.id} query={query} />}
 
       <h3>Document</h3>
       <PdfPage doc={doc} />
