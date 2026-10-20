@@ -49,7 +49,8 @@ export function answerFor(question: string, topic: Topic, docs: Document[]): Ans
 
   const q = question || topic.id
   const wanted = new Set(stems(q))
-  const wantsValue = ASKS_FOR_VALUE.test(q.toLowerCase()) || !question
+  // A bare topic ("maaltijdcheques") most likely asks for the key figure.
+  const wantsValue = ASKS_FOR_VALUE.test(q.toLowerCase()) || q.trim().split(/\s+/).length <= 2
   let quote = ''
   let top = 0
   for (const s of sentences(doc.text, doc.title)) {

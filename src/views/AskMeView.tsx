@@ -4,7 +4,8 @@ import type { Document, ViewProps } from '../types'
 import { formatDate } from '../format'
 import { answerFor } from './askme/answer'
 import { buildTopics, topicForQuestion, TRUST, type Topic, type Trust } from './askme/askmeData'
-import { createTimeline, type TimelineCallbacks } from './askme/timeline'
+import { GroupPopover } from './askme/GroupPopover'
+import { createTimeline, type CardAnchor, type TimelineCallbacks } from './askme/timeline'
 import { createTopicGraph } from './askme/topicGraph'
 
 const fileById = new Map(libraryItems.filter((f) => f.document).map((f) => [f.id, f]))
@@ -99,27 +100,25 @@ function AskMeTopics({ topics, onOpenTopic }: { topics: Topic[]; onOpenTopic: (i
 }
 
 function AskMeTimeline({ topic, onOpenDoc }: { topic: Topic; onOpenDoc: (id: string) => void }) {
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+  // An open bundle of copies is shown as a popover on top of the timeline, so nothing else moves.
+  const [openGroup, setOpenGroup] = useState<{ id: string; rect: DOMRect } | null>(null)
   const stageRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const tipRef = useRef<HTMLDivElement>(null)
-  const timelineRef = useRef<ReturnType<typeof createTimeline> | null>(null)
-  const callbacks = useRef<TimelineCallbacks>({ onOpenDoc, onToggleGroup: () => {} })
-  callbacks.current = { onOpenDoc, onToggleGroup: (id) => setExpanded((e) => ({ ...e, [id]: !e[id] })) }
+  const callbacks = useRef<TimelineCallbacks>({ onOpenDoc, onOpenGroup: () => {} })
+  callbacks.current = {
+    onOpenDoc,
+    onOpenGroup: (id: string, a: CardAnchor) => {
+      const s = stageRef.current!.getBoundingClientRect()
+      setOpenGroup({ id, rect: new DOMRect(s.left + a.left, s.top + a.top, a.width, a.bottom - a.top) })
+    },
+  }
 
   useEffect(() => {
     const timeline = createTimeline({ stage: stageRef.current!, svgEl: svgRef.current!, tip: tipRef.current!, callbacks })
-    timelineRef.current = timeline
     timeline.render(topic, new Date())
-    return () => {
-      timeline.destroy()
-      timelineRef.current = null
-    }
+    return () => timeline.destroy()
   }, [topic])
-
-  useEffect(() => {
-    timelineRef.current?.setExpanded(expanded)
-  }, [expanded])
 
   const used = new Set(topic.docs.map((d) => d.trust))
   const replaced = topic.docs.some((d) => d.replacedBy)
@@ -131,6 +130,18 @@ function AskMeTimeline({ topic, onOpenDoc }: { topic: Topic; onOpenDoc: (id: str
           <div className="askme-tip" ref={tipRef} />
         </div>
       </div>
+      {openGroup && topic.groups[openGroup.id] && (
+        <GroupPopover
+          topic={topic}
+          groupId={openGroup.id}
+          anchor={openGroup.rect}
+          onOpenDoc={(id) => {
+            setOpenGroup(null)
+            onOpenDoc(id)
+          }}
+          onClose={() => setOpenGroup(null)}
+        />
+      )}
       <div className="askme-legend">
         {LEGEND.filter((k) => used.has(k)).map((k) => (
           <span key={k}>

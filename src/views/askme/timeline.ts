@@ -11,9 +11,17 @@ const GROUP_GAP = 28 // space between cards of an expanded bundle
 const FONT_TITLE = "600 13px Inter, system-ui, sans-serif"
 const FONT_SUB = "400 12px Inter, system-ui, sans-serif"
 
+/** Where a card sits on the stage, in pixels; used to place a popover next to it. */
+export interface CardAnchor {
+  left: number
+  top: number
+  bottom: number
+  width: number
+}
+
 export interface TimelineCallbacks {
   onOpenDoc: (id: string) => void
-  onToggleGroup: (id: string) => void
+  onOpenGroup: (id: string, anchor: CardAnchor) => void
 }
 
 interface Card {
@@ -380,7 +388,7 @@ export function createTimeline(opts: {
         chev.append('path').attr('d', 'M-2.5 -5.5L3 0L-2.5 5.5')
         chev.on('click', (e: MouseEvent, d) => {
           e.stopPropagation()
-          if (d.group) callbacks.current.onToggleGroup(d.group)
+          if (d.group) callbacks.current.onOpenGroup(d.group, anchorOf(d))
         })
         g.on('click', (_e: MouseEvent, d) => onCard(d))
           .on('keydown', (e: KeyboardEvent, d) => {
@@ -424,9 +432,13 @@ export function createTimeline(opts: {
     for (const g of Object.values(groups)) cards.filter((d) => d.id === leadOf(g)).raise()
   }
 
+  function anchorOf(d: Placed): CardAnchor {
+    return { left: d.left, top: d.ty - M.cardH / 2, bottom: d.ty + M.cardH / 2, width: d.card.width }
+  }
+
   function onCard(d: Placed) {
     hideTip()
-    if (d.card.isLead && d.group) callbacks.current.onToggleGroup(d.group)
+    if (d.card.isLead && d.group) callbacks.current.onOpenGroup(d.group, anchorOf(d))
     else callbacks.current.onOpenDoc(d.id)
   }
 

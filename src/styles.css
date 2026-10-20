@@ -882,6 +882,7 @@ button.crumb:hover {
   stroke: var(--text);
   fill: var(--hover);
 }
+.askme-topic:focus,
 .askme-topic:focus-visible {
   outline: none;
 }
@@ -961,6 +962,7 @@ button.crumb:hover {
 .askme-card {
   cursor: pointer;
 }
+.askme-card:focus,
 .askme-card:focus-visible {
   outline: none;
 }
@@ -1078,11 +1080,125 @@ button.crumb:hover {
 .askme-legend-line.red {
   background: var(--danger);
 }
+/* bundle of copies: a popover over the timeline */
+.popover-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgba(15, 23, 42, 0.06);
+}
+.group-popover {
+  position: fixed;
+  z-index: 21;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14), 0 2px 6px rgba(15, 23, 42, 0.06);
+  animation: popover-in 0.14s ease-out;
+}
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+.group-popover-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 10px 6px 8px 12px;
+}
+.group-popover-title {
+  font-weight: 600;
+}
+.group-popover-sub {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.group-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.group-item,
+.group-replaced {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  text-align: left;
+}
+.group-item:hover,
+.group-replaced:hover {
+  background: var(--hover);
+}
+.group-dot,
+.group-replaced-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--attention);
+}
+.group-replaced-dot {
+  background: var(--ok);
+}
+.group-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.group-name {
+  font-weight: 600;
+}
+.group-meta {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.group-replaced .group-meta {
+  margin: 0 0 2px;
+}
+.group-tag {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--hover);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  vertical-align: 1px;
+}
+.group-chev {
+  color: #94a3b8;
+  font-size: 18px;
+}
+.group-replaced {
+  position: relative;
+  margin-top: 7px;
+}
+.group-replaced::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 12px;
+  right: 12px;
+  border-top: 1px solid var(--border);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .askme-tip,
   .askme-card-bg,
   .askme-bubble {
     transition: none;
+  }
+  .group-popover {
+    animation: none;
   }
 }
 
