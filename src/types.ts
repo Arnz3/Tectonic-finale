@@ -45,6 +45,9 @@ export interface MeetingChange {
   line: string
   oldValue: string
   newValue: string
+  /** The literal sentence in the original document, and what it says now. */
+  oldSentence: string
+  newSentence: string
   /** The document this change replaces. */
   replaces: string
   verifiedBy: string

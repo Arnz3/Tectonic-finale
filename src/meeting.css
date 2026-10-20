@@ -558,3 +558,47 @@
 .meeting-foot button {
   color: var(--cp-brand);
 }
+
+/* The original document with the change from the meeting marked in it */
+.meeting-panel-sub {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.meeting-change .meeting-quote {
+  margin-top: 12px;
+  background: #fff;
+}
+.doc-with-change {
+  margin-bottom: 16px;
+}
+.doc-change {
+  display: inline;
+  padding: 2px 0;
+}
+.doc-del {
+  background: #fdecec;
+  color: #b42318;
+  text-decoration: line-through;
+  text-decoration-color: rgba(180, 35, 24, 0.6);
+}
+.doc-ins {
+  padding: 1px 3px;
+  border-radius: 4px;
+  background: #ece9fd;
+  color: #4c3db0;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: inset 0 -2px 0 var(--meeting);
+}
+.doc-note {
+  display: block;
+  margin: 6px 0 4px;
+  padding: 6px 10px;
+  border-left: 3px solid var(--meeting);
+  border-radius: 0 6px 6px 0;
+  background: var(--meeting-soft);
+  color: #4c3db0;
+  font-size: 12px;
+  font-weight: 600;
+}
