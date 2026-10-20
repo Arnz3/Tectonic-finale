@@ -6,17 +6,19 @@ import type { Document, ViewProps } from '../types'
 import { formatDate } from '../format'
 import { contactFor, LEVEL_LABEL } from '../skills'
 import { answerFor } from './askme/answer'
-import { buildTopics, LANES, topicForQuestion, type Topic } from './askme/askmeData'
-import { LinearTimeline } from './askme/LinearTimeline'
+import { buildTopics, topicForQuestion, TRUST, type Topic, type Trust } from './askme/askmeData'
+import { GroupPopover } from './askme/GroupPopover'
+import { createTimeline, type CardAnchor, type TimelineCallbacks } from './askme/timeline'
 import { createTopicGraph } from './askme/topicGraph'
 
 const fileById = new Map(libraryItems.filter((f) => f.document).map((f) => [f.id, f]))
+const LEGEND: Trust[] = ['meeting', 'best', 'similar', 'expired', 'support', 'other_scope']
 
 /**
  * ASKME: topics of the library as a graph; a topic (clicked, or recognised in a question typed
  * in the search box) opens a timeline that shows which source to trust.
  */
-export function AskMeView({ items, onOpen, query, onShowPerson }: ViewProps) {
+export function AskMeView({ items, onOpen, query }: ViewProps) {
   const changes = useMeetingChanges()
   const docs = useMemo(() => [...items.flatMap((i) => (i.document ? [i.document] : [])), ...changes], [items, changes])
   const [change, setChange] = useState<Document | null>(null)
@@ -67,7 +69,7 @@ export function AskMeView({ items, onOpen, query, onShowPerson }: ViewProps) {
       {topic ? (
         <>
           <AnswerCard question={query} topic={topic} docs={docs} onOpenDoc={openDoc} />
-          <AskMeTimeline key={topic.id} topic={topic} docs={docs} onOpenDoc={openDoc} onShowPerson={onShowPerson} />
+          <AskMeTimeline key={topic.id} topic={topic} onOpenDoc={openDoc} />
         </>
       ) : (
         <AskMeTopics key={topics.map((t) => t.id).join('|')} topics={topics} onOpenTopic={setPicked} />
@@ -106,42 +108,74 @@ function AskMeTopics({ topics, onOpenTopic }: { topics: Topic[]; onOpenTopic: (i
   )
 }
 
-function AskMeTimeline({
-  topic: fullTopic,
-  docs,
-  onOpenDoc,
-  onShowPerson,
-}: {
-  topic: Topic
-  docs: Document[]
-  onOpenDoc: (id: string) => void
-  onShowPerson: (name: string) => void
-}) {
-  // One category at a time keeps the timeline a single line; procedures first.
-  const lanes = LANES.filter((l) => fullTopic.docs.some((d) => d.lane === l.id))
-  const [lane, setLane] = useState(() => (lanes.some((l) => l.id === 'procedure') ? 'procedure' : (lanes[0]?.id ?? 'all')))
-  const topic = useMemo<Topic>(() => {
-    if (lane === 'all') return fullTopic
-    const shown = fullTopic.docs.filter((d) => d.lane === lane)
-    const groups = Object.fromEntries(Object.entries(fullTopic.groups).filter(([, g]) => g.lane === lane))
-    return { ...fullTopic, docs: shown, groups }
-  }, [fullTopic, lane])
+function AskMeTimeline({ topic, onOpenDoc }: { topic: Topic; onOpenDoc: (id: string) => void }) {
+  // An open bundle of copies is shown as a popover on top of the timeline, so nothing else moves.
+  const [openGroup, setOpenGroup] = useState<{ id: string; rect: DOMRect } | null>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
+  const svgRef = useRef<SVGSVGElement>(null)
+  const tipRef = useRef<HTMLDivElement>(null)
+  const callbacks = useRef<TimelineCallbacks>({ onOpenDoc, onOpenGroup: () => {} })
+  callbacks.current = {
+    onOpenDoc,
+    onOpenGroup: (id: string, a: CardAnchor) => {
+      const s = stageRef.current!.getBoundingClientRect()
+      setOpenGroup({ id, rect: new DOMRect(s.left + a.left, s.top + a.top, a.width, a.bottom - a.top) })
+    },
+  }
 
+  useEffect(() => {
+    const timeline = createTimeline({ stage: stageRef.current!, svgEl: svgRef.current!, tip: tipRef.current!, callbacks })
+    timeline.render(topic, new Date())
+    return () => timeline.destroy()
+  }, [topic])
+
+  const used = new Set(topic.docs.map((d) => d.trust))
+  const replaced = topic.docs.some((d) => d.replacedBy && !d.replacedBy.startsWith('meeting-'))
+  const replacedInMeeting = topic.docs.some((d) => d.replacedBy?.startsWith('meeting-'))
   return (
     <div className="askme-stage-wrap">
-      {lanes.length > 1 && (
-        <div className="lane-filter" role="tablist" aria-label="Categorie">
-          {[...lanes, { id: 'all', label: 'Alles' }].map((l) => {
-            const n = l.id === 'all' ? fullTopic.docs.length : fullTopic.docs.filter((d) => d.lane === l.id).length
-            return (
-              <button key={l.id} role="tab" aria-selected={lane === l.id} className={lane === l.id ? 'active' : ''} onClick={() => setLane(l.id)}>
-                {l.label} <span className="lane-count">{n}</span>
-              </button>
-            )
-          })}
+      <div className="askme-scroll">
+        <div className="askme-stage askme-timeline" ref={stageRef}>
+          <svg ref={svgRef} role="img" aria-label={`Tijdlijn ${topic.title}`} />
+          <div className="askme-tip" ref={tipRef} />
         </div>
+      </div>
+      {openGroup && topic.groups[openGroup.id] && (
+        <GroupPopover
+          topic={topic}
+          groupId={openGroup.id}
+          anchor={openGroup.rect}
+          onOpenDoc={(id) => {
+            setOpenGroup(null)
+            onOpenDoc(id)
+          }}
+          onClose={() => setOpenGroup(null)}
+        />
       )}
-      <LinearTimeline topic={topic} docs={docs} onOpenDoc={onOpenDoc} onShowPerson={onShowPerson} />
+      <div className="askme-legend">
+        {LEGEND.filter((k) => used.has(k)).map((k) => (
+          <span key={k}>
+            <span className="askme-legend-dot" style={{ background: TRUST[k].color }} aria-hidden />
+            {TRUST[k].label}
+          </span>
+        ))}
+        <span>
+          <span className="askme-legend-line green" aria-hidden />
+          Geldt tot vandaag
+        </span>
+        {replaced && (
+          <span>
+            <span className="askme-legend-line red" aria-hidden />
+            Vervangen door
+          </span>
+        )}
+        {replacedInMeeting && (
+          <span>
+            <span className="askme-legend-line purple" aria-hidden />
+            Vervangen in meeting
+          </span>
+        )}
+      </div>
     </div>
   )
 }
